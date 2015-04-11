@@ -70,7 +70,6 @@ Let us take note of what we see in **AwesomePlugin.m** right off the bat:
 
 That’s right, a new Xcode instance was opened since Xcode can debug itself! We can use all the standard debugging tools too, including breakpoints!
 
-- - -
 *Now click the* ***Edit menu***, *then the ***Do Action*** *menu item, in the* ***newly opened Xcode instance***. Hello World!
 
 You will find that the Do Action menu item is only available in the second Xcode. That’s because plugin loading happens when Xcode is launched. 
@@ -99,4 +98,16 @@ To read the UUID of your Xcode, paste the following snippet into **Terminal**:
 This will spit out the unique ID you need to copy into the Info.plist under DVTPluginCompatibilityUUIDS. This is to tell Xcode that your plugin is compatible with the current version.
 
 <p align="center"><img src="images/xcp-tut-files.png" border="1"/></p>
+
+## x: Intermission
+Let’s break down what is needed for us to accomplish our task. We would like to find a way to somehow…
+
+1. **...hook into the way Xcode is building its UI** so we can inject our own views.
+2. ...either **gain access to the content of the editor** (the source code) OR ideally **tap into the Document Item List generation process** (the one that appears when you click the end of the breadcrumb bar above the source code) so we can just steal the whole list and not bother creating our own views
+3. **...jump to a certain position** in the source code, possibly either by knowing the line number, symbol name or some other identifier
+4. ... **notice when the code in the editor is changed** so we can re-generate or re-steal the content of our views
+
+Next comes the crazy part. This is where heroes are made!
+
+## 2: Hunting for Headers
 
