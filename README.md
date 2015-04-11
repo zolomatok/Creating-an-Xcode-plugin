@@ -3,7 +3,7 @@ Xcode is awesome. No doubt.  Sure, it crashes at times, frustrates us with code 
 
 There is a nice list of available plugins over at [NSHipster](http://nshipster.com/xcode-plugins/) that aim to help with a lot of theese.
 
-Now here is the fun part! You, yes YOU can develop your own plugin and make Xcode do **anything**!
+Now here is the fun part! You, yes **YOU** can develop your own plugin and make Xcode do **anything**!
 
 <p align="center"><img src="images/xcp-tut-face-motherofgod.png" width="400" border="1"/></p>
 
@@ -25,8 +25,8 @@ In order to have a greater understanding of the whole process, let me introduce 
 
 1. **Create a project with a plugin template** and use the initializer of the plugin as the point of insertion
 2. **Browse the Xcode runtime headers** for clues on what to hook into. These headers contain the names of the protocols, properties and methods of every single class Xcode relies on
-3. **Look at the notifications Xcode broadcasts** to find out if there are broadcast events we are interested in
-4. **Try and intercept method calls** in the target classes to replace their implementation with our own
+3. **Try and intercept method calls** in the target classes to replace their implementation with our own
+4. **Look at the notifications Xcode broadcasts** to find out if there are broadcast events we are interested in
 
 ## Toolkit
 Fortunately we can find tools for each of these tasks that will make our lives infinitly more pleasant. Time to assemble our **toolkit**!
@@ -52,3 +52,7 @@ Looking at the Xcode header files, you might notice that it is around **12,000**
 4. Hit **build**
 5. Restart Xcode
 6. Voila!
+
+***This tutorial is quite a read. To keep things organized, the rest of the article will follow the steps of the workflow described above.***
+
+## 1: The Project
