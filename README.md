@@ -89,7 +89,7 @@ The way to solve this is by uninstalling the plugin by **deleting it from the pl
 2. Add **JGMethodSwizzler.h** and **JGMethodSwizzler.m** into your project by dragging them into the Project Navigator.
 3. Add **DTXcodeHeaders.h**, **DTXcodeUtils.h** and **DTXcodeUtils.m** into the project also.
 
-Additionally, if you are following this tutorial in the future (OMG HAX!) using **Xcode 7** or later you might need to add your Xcode version’s UUID into the **DVTPluginCompatibilityUUIDS** field in the Info.plist.
+Additionally, if you are following this tutorial from the future (OMG HAX!) using **Xcode 7** or later you might need to add your Xcode version’s UUID into the **DVTPluginCompatibilityUUIDS** field in the Info.plist.
 
 To read the UUID of your Xcode, paste the following snippet into **Terminal**:
 
