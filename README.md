@@ -56,3 +56,47 @@ Looking at the Xcode header files, you might notice that it is around **12,000**
 ***This tutorial is quite a read. To keep things organized, the rest of the article will follow the steps of the workflow described above.***
 
 ## 1: The Project
+Start up Xcode 6, and go to **File \ New \ Project…** Select **Xcode Plugin**, name it **AwesomePlugin**.
+<p align="center"><img src="images/xcp-tut-create.png" width="600" border="1"/></p>
+
+This will create a new project with a single class which has the **name of your project**.
+Let us take note of what we see in **AwesomePlugin.m** right off the bat:
+
+1. There is a **sharedPlugin singleton**. This will come in handy during the method swizzling.
+2. **-initWithBundle:** seems to be our point of insertion, and indeed there is already some code there regarding the menu
+
+*For now, hit* ***build and run*** *and see what happens!*
+<p align="center"><img src="images/xcp-tut-sorcery.jpg" width="400" border="1"/></p>
+
+That’s right, a new Xcode instance was opened since Xcode can debug itself! We can use all the standard debugging tools too, including breakpoints!
+
+- - -
+*Now click the* ***Edit menu***, *then the ***Do Action*** *menu item, in the* ***newly opened Xcode instance***. Hello World!
+
+You will find that the Do Action menu item is only available in the second Xcode. That’s because plugin loading happens when Xcode is launched. 
+
+Since the plugin **binary is copied into the plugin directory** as part of the build process, if you quit Xcode completely and launch it again, the menu item will appear without building and running the project again.
+
+The plugin directory for Xcode 6 is **~/Library/Application Support/Developer/Shared/Xcode/Plug-ins.** 
+
+It is a good idea to create an **alias** for this folder somewhere that is convenient for you. If we intoruce a bug in the plugin that makes it crash (something that happens all the time) and than quit Xcode, it will keep crashing on launch time and we will not even be able to start Xcode again.
+
+The way to solve this is by uninstalling the plugin by **deleting it from the plugin directory**, then restarting Xcode.
+
+- - -
+*Let’s setup our project.*
+
+1. You can delete the **-doMenuAction** method, and the **“// Sample Menu Item:”** section of **-initWithBundle:**
+2. Add **JGMethodSwizzler.h** and **JGMethodSwizzler.m** into your project by dragging them into the Project Navigator.
+3. Add **DTXcodeHeaders.h**, **DTXcodeUtils.h** and **DTXcodeUtils.m** into the project also.
+
+Additionally, if you are following this tutorial in the future (OMG HAX!) using **Xcode 7** or later you might need to add your Xcode version’s UUID into the **DVTPluginCompatibilityUUIDS** field in the Info.plist.
+
+To read the UUID of your Xcode, paste the following snippet into **Terminal**:
+
+`defaults read /Applications/Xcode.app/Contents/Info DVTPlugInCompatibilityUUID`
+
+This will spit out the unique ID you need to copy into the Info.plist under DVTPluginCompatibilityUUIDS. This is to tell Xcode that your plugin is compatible with the current version.
+
+<p align="center"><img src="images/xcp-tut-files.png" border="1"/></p>
+
