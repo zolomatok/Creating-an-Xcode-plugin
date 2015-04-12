@@ -143,7 +143,7 @@ Let’s jump ahead. Looking at the IDEKit classes there seems to be a rather int
 We do not need to import the IDEInspectorArea header at this time, because we can use `NSClassFromString()` to get the class object by its name. That’s enough, since we do not plan on using any of its properties or calling any of its methods.
 
 ## 3: Swizzle time!
-
+### 3.1 The Panel
 As Mattt Thompson from NSHipster puts it, [“Method swizzling is the process of changing the implementation of an existing selector.”](http://nshipster.com/method-swizzling/)
 
 It’s like overriding a method via subclassing, only this way the class that is doing the overriding does not have to be a subclass! It’s a language feature of Objective-C. Crazy!
@@ -247,7 +247,100 @@ First we need to import `DVTControllerContentView.h` into our project. It is a s
 
 After importing the headers, there are a couple of things we need to do:
 
-1. The class-dumping process inserts a `- (void).cxx_destruct;` method declaration into each files. Since these are not valid Obj-c method names, Xcode will complain. **Just comment them out or delete them**.
-2. The headers do not contain the necessary #imports, but we can include them using common sense. If the class uses Foundation or AppKit classes, import Foundation/Foundation.h or AppKit/AppKit.h. Naturally we have to import the superclass too (if not a foundation or appkit class).
-3. <>Protoocol usage
+1. The class-dumping process inserts a `- (void).cxx_destruct;` method declaration into each files. Since these are not valid Obj-c method names, Xcode will complain. **Just comment it out or delete it**.
+2. The headers do not contain the necessary #imports, we have to do the imports manually.
+  2. Import the **superclass** if it's not a Foundation or AppKit class
+  2. Other unknown classes need not necessarily be imported. We can substitute the imports with simple `@class` declarations. 
+3. The class might have **protocol conformities** declared. **Comment them out, or delete them.**
+
+<p align="center"><img src="images/xcp-tut-importing.png" border="1"/></p>
+
+- - -
+
+*Now that we have the necessary classes in our project, let's import `DVTControllerContentView.h` in `AwesomePlugin.m`*
+
+```
+#import "DVTControllerContentView.h"
+```
+
+*Then let’s declare a* ***global property*** *of type `NSView*` in `AwesomePlugin.m`, called **“containerView”**. So our `@interface` looks like this:*
+
+```
+@interface AwesomePlugin()
+@property NSView *containerView;
+@property (nonatomic, strong, readwrite) NSBundle *bundle;
+@end
+```
+
+*Now change the `-createDocPanel` implementation to the following:*
+
+```
+- (void)createDocPanel {
+
+    Class d = NSClassFromString(@"IDEInspectorArea");
+    [d swizzleInstanceMethod:@selector(_contentViewForSlice:inCategory:) withReplacement:JGMethodReplacementProviderBlock {
+        return JGMethodReplacement(id, id, id slice, id category) {
+            
+            DVTControllerContentView *orig = JGOriginalImplementation(DVTControllerContentView *, slice, category);
+
+			// A
+            if ([[slice name] isEqualToString:@"QuickHelpInspectorMain"]) {
+               
+				// B 
+                // Create the container
+                sharedPlugin.containerView = [[NSView alloc] initWithFrame:CGRectMake(0, 0, orig.frame.size.width, 400)];
+                [sharedPlugin.containerView setWantsLayer:YES];
+                [sharedPlugin.containerView.layer setBackgroundColor:[[NSColor clearColor] CGColor]];
+                
+				// C
+                // Update the items
+                [sharedPlugin updatePanel];
+                
+                
+				// D
+                // Push the container
+                [orig setContentView:sharedPlugin.containerView];
+            }
+            
+            
+            return orig;
+        };
+    }];
+}
+```
+
+*Finally, implement `-updatePanel:`*
+
+```
+- (void)updatePanel {
+    
+    NSTextField *textField = [[NSTextField alloc] initWithFrame:CGRectMake(0, 400-30, sharedPlugin.containerView.frame.size.width, 30)];
+    textField.selectable = NO;
+    textField.editable = NO;
+    textField.bezeled = NO;
+    textField.drawsBackground = NO;
+    textField.font = [NSFont systemFontOfSize:13];
+    [textField setLineBreakMode:NSLineBreakByTruncatingTail];
+    textField.stringValue = @"Hello World";
+    [sharedPlugin.containerView addSubview:textField];
+}
+```
+
+As usual, let’s look at what we just did:
+
+**A**. We check if the currently handled slice is the **Quick Help**.
+
+**B**. Since we will need to add multiple views in the panel, we create a container view to simplify things. Our container view is a **global variable** since we will need to access it every time we want to change the contents of the panel (when a save happens in the code for example). 
+Remember, we are inside the **JGMethodReplacement** function, so `self` would actually refer to the object whose method we are swizzling. That means `self.containerView` would throw an `unknown selector` error. This is where `sharedPlugin` comes handy.
+
+**C**. Since we will need to make changes to the contents of the panel, it’s best to separate the view population into a separate method. On OS X the origin is at the lower left corner, that is why we need to subtract the height of our view from the overall height to make our label appear on top. See this [StackOverflow](http://stackoverflow.com/questions/12408334/cocoa-nsview-origin-x-at-the-bottom) question if you cannot live with the way things are.
+
+**D**. I am cheating here a bit, since we wouldn’t actually know this yet, but DVTControllerContentView can only have one subview and that is set via `-setContentView:`. If we tried to call `-addSubview:` the plugin would crash and inform us about this problem.
+
+*Let’s* ***build and run!***
+
+<p align="center"><img src="images/xcp-tut-success.png" width="400" border="1"/></p>
+
+### 3.2 The Editor 
+Now that we know how to **display** our own content within Xcode, it’s time to actually retrieve the information we need. That means interpreting the code!
 
