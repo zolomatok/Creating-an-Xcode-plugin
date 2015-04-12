@@ -122,7 +122,7 @@ This opens up a little window which shows us the view hierarchy when we click wi
 
 *Click any open area on the File Inspector.*
 
-<p align="center"><img src="images/xcp-tut-viewclicker.png" width="600" border="1"/></p>
+<p align="center"><img src="images/xcp-tut-viewclicker.png" border="1"/></p>
 
 This is great! With the click of the mouse we can see a lot of classes associated with the UI! Let’s find out **what libs** theses classes reside in.
 
@@ -216,5 +216,37 @@ You might think this is some obscure language feature, but you use it all the ti
 
 Do **not** do this now, however.
 
+
 - - -
+
+
+*Put a* ***breakpoint*** *on the `return orig;` line, then* ***build and run!***
+
+Xcode will complain about `_contentViewForSlice:inCategory:` being an `undeclared selector`, but you can safely disregard the warning. In fact you can silence it with statement for the compiler. See this [StackOverflow](http://stackoverflow.com/questions/6224976/how-to-get-rid-of-the-undeclared-selector-warning) question.
+
+<p align="center"><img src="images/xcp-tut-debug-classes.png" border="1"/></p>
+
+Alright seems like slice is of type `IDEUtilitySliceExtension*`, while category is of type `DVTExtension*`, and apparently the method’s return type is `DVTControllerContentView*`.
+
+Looking at their header files it seems both sport the ‘name’ property, which might reveal more about them.
+
+*Insert the following line just before ‘// D’:*
+
+`NSLog(@"Slice name: %@ || Category name: %@",[slice name], [category name]);`
+
+*Let’s* ***build and run*** *again.*
+
+Now we are getting somewhere! Seems like the name of the slice really tells us which view is being created.
+
+Switching between the inspector tabs, there is a slice named **“QuickHelpInspectorMain”**. Ideally, with more time, we could find the method that inserts these slices and create our own tab in the inspector tab switcher, but since the Quick Help inspector is rarely used, we can hijack it to display our views.
+
+First we need to import `DVTControllerContentView.h` into our project. It is a subclass of `DVTLayoutView_ML` so we need to import him too. DVTLayoutView_ML is just an NSView subclass, so the chain of imports stops here, but it is not uncommon having to import numberous files so that you can use one class.
+
+*Let’s create a New Group titled XcodeHeaders for our imported headers in the Project Navigator and drag ’n’ drop* ***DVTControllerContentView.h*** *and* ***DVTLayoutView_ML.h*** *into it. Check “Copy items if needed”.*
+
+After importing the headers, there are a couple of things we need to do:
+
+1. The class-dumping process inserts a `- (void).cxx_destruct;` method declaration into each files. Since these are not valid Obj-c method names, Xcode will complain. **Just comment them out or delete them**.
+2. The headers do not contain the necessary #imports, but we can include them using common sense. If the class uses Foundation or AppKit classes, import Foundation/Foundation.h or AppKit/AppKit.h. Naturally we have to import the superclass too (if not a foundation or appkit class).
+3. <>Protoocol usage
 
