@@ -240,6 +240,7 @@ Now we are getting somewhere! Seems like the name of the slice really tells us w
 
 Switching between the inspector tabs, there is a slice named **“QuickHelpInspectorMain”**. Ideally, with more time, we could find the method that inserts these slices and create our own tab in the inspector tab switcher, but since the Quick Help inspector is rarely used, we can hijack it to display our views.
 
+- - -
 First we need to import `DVTControllerContentView.h` into our project. It is a subclass of `DVTLayoutView_ML` so we need to import him too. DVTLayoutView_ML is just an NSView subclass, so the chain of imports stops here, but it is not uncommon having to import numberous files so that you can use one class.
 
 *Let’s create a New Group titled XcodeHeaders for our imported headers in the Project Navigator and drag ’n’ drop* ***DVTControllerContentView.h*** *and* ***DVTLayoutView_ML.h*** *into it. Check “Copy items if needed”.*
