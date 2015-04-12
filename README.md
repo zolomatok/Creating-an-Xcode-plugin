@@ -110,4 +110,111 @@ Let’s break down what is needed for us to accomplish our task. We would like t
 Next comes the crazy part. This is where heroes are made!
 
 ## 2: Hunting for Headers
+Remember those **Xcode Runtime Headers**? Of which there are ~12,000?
+We need to browse dem gud.
+
+Fortunately the **names of the libraries are rather telling** so we can safely discard most of them. It is unlikely that we need to deal with libs like “DebuggerLLDB”, “IDESubversion” or “PhysicsKit” when we try to hook into the UI.
+
+This is also one of two cases when **Xcode Explorer** can really help out.
+
+*Open the* ***Window*** *menu in Xcode and click* ***Explorer \ View Clicker***.
+This opens up a little window which shows us the view hierarchy when we click with the mouse.
+
+*Click any open area on the File Inspector.*
+
+<p align="center"><img src="images/xcp-tut-viewclicker.png" width="600" border="1"/></p>
+
+This is great! With the click of the mouse we can see a lot of classes associated with the UI! Let’s find out **what libs** theses classes reside in.
+
+There are actually two libraries that take up the building blocks of the bulk of Xcode’s UI. Can you find out which ones they are?
+
+Go ahead, I’ll wait.
+
+Srsly.
+
+It’s **DVTKit** and **IDEKit**. DVTKit seems to be the lower level of the two. For the life of me, by the way, I could not figure out what DVT stands for. Interestingly, IDEKit is an open-source library which Apple has internally forked a long time ago. We do not need it for the purposes of this tutorial, but it is available on GitHub. This version is obviuosly different from the one Apple uses.
+
+Usually what follows next is a long and arduous process of going through the class names of the libraries in question, picking out the potentially helpful ones, looking at their methods and when we find one that seems to do what we are looking for, swizzling it to check what they do.
+
+This can and will take long hours, and indeed the bulk of the time spent developing a new plugin   will be spent on this core loop of discovery - and frustration.
+
+Let’s jump ahead. Looking at the IDEKit classes there seems to be a rather interesting one, **IDEInspectorArea**. Not only that, but it has a method titled `-_contentViewForSlice:inCategory:`. This sure seems like the way the Inspector panel views get created!
+
+We do not need to import the IDEInspectorArea header at this time, because we can use `NSClassFromString()` to get the class object by its name. That’s enough, since we do not plan on using any of its properties or calling any of its methods.
+
+## 3: Swizzle time!
+
+As Mattt Thompson from NSHipster puts it, [“Method swizzling is the process of changing the implementation of an existing selector.”](http://nshipster.com/method-swizzling/)
+
+It’s like overriding a method via subclassing, only this way the class that is doing the overriding does not have to be a subclass! It’s a language feature of Objective-C. Crazy!
+
+1, Import **JGMethodSwizzler** in AwesomePlugin.m
+
+`#import “JGMethodSwizzler.h"`
+
+2, Next replace **-initWithBundle:’s** implementation to the following:
+
+```
+- (id)initWithBundle:(NSBundle *)plugin {
+    if (self = [super init]) {
+        // reference to plugin's bundle, for resource access
+        self.bundle = plugin;
+        
+        // Create the panel
+        [self createDocPanel];
+    }
+    return self;
+}
+```
+
+3, Implement **-createDocPanel**
+
+```
+- (void)createDocPanel {
+    
+    // A
+    Class c = NSClassFromString(@"IDEInspectorArea");
+                                
+    // B
+    [c swizzleInstanceMethod:@selector(_contentViewForSlice:inCategory:) withReplacement:JGMethodReplacementProviderBlock {
+        
+        // C
+        return JGMethodReplacement(id, id, id slice, id category) {
+            
+            // D
+            id orig = JGOriginalImplementation(id, slice, category);
+            return orig;
+        };
+    }];
+}
+```
+
+Quite a lot of crazyness going on here so let’s go through each step.
+
+**A**. `NSClassFromString` searches the runtime for the named class. This way we do not need to import anything, since we are not going to use any property on the class or call methods on it.
+
+**B**. Swizzling `_contentViewForSlice:inCategory:` lets us look at its arguments and define our own implementation. We use id instead of concrete classes, since at this point we do not know what class each argument has. We will rely on the debugger to tell us more about that.
+
+**C**. The **first argument** in *JGMethodReplacement* is alway **the return type** of the method being swizzled. This *can* be `void` if the method’s return type is void. 
+The **second argument** is **the class** whose method we are swizzling. In this case this would be `IDEInspectorArea*` , but we can just put id as usual. 
+**The remaining** is a **[variable argument list](http://www.cocoawithlove.com/2009/05/variable-argument-lists-in-cocoa.html)**, meaning an unspecified number of further arguments which are the arguments of the method being swizzled. 
+You might think this is some obscure language feature, but you use it all the time. NSString’s `-stringWithFormat:` actually works the same way. 
+
+**D**. We call the original implementation of the method so nothing will be out of order and it will seem as if nothing happened. It’s like calling super in a subclass.
+**JGOriginalImplementation** works almost the same way as JGMethodReplacement with the exception of omitting the class type argument. So the first argument is the return type, then come the method arguments.
+
+**Note:** Leaving out a method argument in JGMethodReplacement or JGOriginalImplementation or specifing the wrong return type will result in a crash. Keep in mind, that if you swizzle a method that returns `void`, you must specify void as the return type during swizzling, and delete the return statement of JGMethodReplacement. In other words the swizzling would look like this:
+
+```
+[c swizzleInstanceMethod:@selector(_contentViewForSlice:inCategory:) withReplacement:JGMethodReplacementProviderBlock {
+    
+    return JGMethodReplacement(void, id, id slice, id category) {
+        JGOriginalImplementation(void, slice, category);
+    };
+}];
+```
+
+Do **not** do this now, however.
+
+- - -
 
