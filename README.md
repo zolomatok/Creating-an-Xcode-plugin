@@ -552,3 +552,149 @@ https://www.youtube.com/watch?v=VAZsf8mTfyk
 
 ### 3.3 Jumping around
 
+Now we just need to find out how we can manipulate the editor to **scroll to the document item** we click on in the panel and **select it automatically**.
+
+Since DTXcodeUtils was specifically created to help with this sort of stuff, let’s have a look around there.
+
+Sure enough, seems like there is **IDESourceCodeEditor** which quite possibly represents the main editor area. Inspecting the whole class in the runtime headers folder it evidently sports a `-selectDocumentLocations:highlightSelection:` method! We should investigate.
+
+*Let’s declare the `-selectDocumentLocations:highlightSelection:` method in* ***DTXcodeHeaders.h*** *in* ***IDESourceCodeEditor’s*** *`@interface`, so it looks like this:*
+
+```
+@interface IDESourceCodeEditor : IDEEditor
+@property(readonly) IDESourceCodeDocument *sourceCodeDocument;
+@property(retain) DVTSourceTextView *textView;
+- (void)selectDocumentLocations:(id)locations highlightSelection:(BOOL)highlightSelection;
+@end
+```
+
+*Implement the `-itemViewWithTagDidReceiveClick:` delegate method we created previously in* ***AwesomePlugin.m***
+
+```
+- (void)itemViewWithTagDidReceiveClick:(NSInteger)tag {
+    IDESourceCodeEditor *editor = (IDESourceCodeEditor *)[DTXcodeUtils currentEditor];
+    [editor selectDocumentLocations:@[@0] highlightSelection:NO];
+}
+```
+
+Nothing crazy right now, we just ask for the editor from DTXcodeUtils and call our newly discovered method on it.
+
+Even if we (most likely) get a crash, I’m hoping we will be able to tell what input `-selectDocumentLocations:` requires from the error log (**Xcode is pretty verbose in its error messages** which really helps!). We are betting on the `highlightSelection:` part to require a BOOL, since it most likely does.
+
+***Build and run*** *then click one of the items in the panel!*
+
+- - -
+
+**WOAH. Big huge crash.*** But let’s look at the log. There it is: 
+
+`Details:  location should be an instance inheriting from DVTDocumentLocation, but it is <__NSCFNumber: 0x27>`
+
+Alright, let’s use a **DVTDocumentLocation**, whatever it is.
+
+*About an our of frustration follows as we struggle to make the damn selection work, while in the end we realize that the error message was really hyper specific. We need to use an `instance inheriting from DVTDocumentLocation` not an instance of DVTDocumentLocation. What we actually have to use is* ***DVTTextDocumentLocation.***
+
+1, *Drag ’n’ drop the* ***DVTDocumentLocation.h*** *and* ***DVTTextDocumentLocation.h*** *into our project and clean up the imports as described previously.*
+
+2, *Import DVTTextDocumentLocation.h in* ***AwesomePlugin.m***
+
+3, Change the implementation of `-itemViewWithTagDidReceiveClick:` to the following:
+
+```
+- (void)itemViewWithTagDidReceiveClick:(NSInteger)tag {
+    [self jumpToLandmarkItemInTheEditor:self.currentItems[tag]];
+}
+```
+
+4, Implement `-jumpToLandmarkItemInTheEditor:`
+
+```
+- (void)jumpToLandmarkItemInTheEditor:(DVTSourceLandmarkItem *)landmarkItem {
+    
+    // Check if the current editor is a source code editor (not IB or quick look, etc)
+    IDESourceCodeEditor *editor = (IDESourceCodeEditor *)[DTXcodeUtils currentEditor];
+    if (![editor isKindOfClass:[NSClassFromString(@"IDESourceCodeEditor") class]]) {
+        return;
+    }
+    
+    
+    // Jump to the item's location in the source code
+    IDESourceCodeDocument *scd = [DTXcodeUtils currentSourceCodeDocument];
+    DVTTextDocumentLocation *highlightLocation = [[NSClassFromString(@"DVTTextDocumentLocation") alloc] initWithDocumentURL:scd.fileURL timestamp:[NSNumber numberWithDouble:landmarkItem.timestamp] characterRange:landmarkItem.nameRange];
+    [editor selectDocumentLocations:@[highlightLocation] highlightSelection:NO];
+}
+```
+
+Alright then. What we just did is check whether the current editor is indeed a source code editor and than initialize a **DVTTextDocumentLocation** object with the document url of the currently edited file, the **timestamp** and **name range** of the landmark item.
+
+If you think about it, using the timestamp for the identifier of a document item is really quite a genius solution from the maker of DVTKit.
+
+Also, we use `[NSClassFromString(@“DVTTextDocumentLocation”) alloc]`, not `[DVTTextDocumentLocation alloc]`, beacuse the latter would cause an Undefined symbol linker error. I honestly have  no idea why.
+
+***Build and run!***
+
+**Hey, look at that!**
+Not only is the selection working flawlessly, it automagically scrolls the editor to the right position too! **Great!**
+
+## 4: Saving grace
+
+We are in the finish line! The only thing left to do is to somehow learn when the users saves the code, so we can rescan the docuent items.
+
+Liiiiike, and **NSNotification** would be nice….
+
+Time to break out Xcode Explorer again. It has a nice **Notifications view** which displays every single notification Xcode fires, real-time.
+
+1. *Goto* ***Window*** *menu* ***Explorer \ Notifications***
+2. *Press the big circular record button in the Notifications window.*
+3. *Press Command-S.*
+4. **Rejoice!** IDEEditorDocumentDidSaveNotification!
+
+Hurry, before it escapes!
+
+1, *Add the following line in the `-initWithBundle:` method, just after `[self createDocPanel`]*
+
+```
+// Notifications
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationListener:) name:nil object:nil];
+```
+
+2, *Implement `-notificationListener:`*
+
+```
+- (void)notificationListener:(NSNotification *)notif {
+    
+    // Save
+    if ([notif.name isEqualToString:@"IDEEditorDocumentDidSaveNotification"]) {
+       [sharedPlugin updatePanel];
+    }
+}
+```
+
+
+***Build and run!*** Create a new method, hit save and whatch the panel repopulate!
+
+<p align="center"><img src="images/xcp-tut-wasitsohard.png" border="1"/></p>
+
+## Where to go from here?
+
+When you start using your shiny new plugin and start to notice that Xcode crashes more often than it usually does, open the Console.app in your Applications / Utilities folder. The log there contains a line about Xcode having crashed and there is a button which will let you see the crash report.
+
+It is a good idea to use @try-catch in your plugin until you are absolutely certain that the plugin is crash-free. Else anyone using your work will be :( and frustrated. 
+
+I must thank [Craig Edwards](https://github.com/edwardaux) the creator of Xcode Explorer, [Derek Thurn](https://github.com/thurn) compiler of DTXcodeUtils, [Jonas Gessner](https://github.com/JonasGessner) the creator of JGMethodSwizzler, the guys begind [CodePilot](https://github.com/macoscope) like Zbigniew Sobiecki and every one of the people making Xcode plugins and publishing them on GitHub so we can all learn from them!
+
+This tutorial could not have happened without them.
+
+The sites I learned from:
+
+http://www.overacker.me/blog/2015/01/25/creating-an-xcode-plugin
+
+http://artsy.github.io/blog/2014/06/17/building-the-xcode-plugin-snapshots/
+
+http://nshipster.com/xcode-plugins/
+
+http://www.fantageek.com/1297/how-to-create-xcode-plugin/
+
+and the CodePilot source: https://github.com/macoscope/CodePilot
+
+Thank you all.
+
