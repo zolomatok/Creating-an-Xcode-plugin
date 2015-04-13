@@ -585,7 +585,7 @@ Even if we (most likely) get a crash, I’m hoping we will be able to tell what 
 
 - - -
 
-**WOAH. Big huge crash.*** But let’s look at the log. There it is: 
+**WOAH. Big huge crash.** But let’s look at the log. There it is: 
 
 `Details:  location should be an instance inheriting from DVTDocumentLocation, but it is <__NSCFNumber: 0x27>`
 
