@@ -351,15 +351,15 @@ Note, that DTXCodeUtils does not actually contain the header of these classes, i
 
 DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like something we night meed. And sure enought, upon closer inspection we find that it has a method called `-ideTopLevelStructureObjects` which returns someting. Let’s find out what it is!
 
-1, Import AppKit into into **DTXcodeHeaders.h** to silence the compiler errors
+1, *Import AppKit into into* ***DTXcodeHeaders.h*** *to silence the compiler errors*
 
 `#import <Appkit/AppKit.h>`
 
-2, Import DTXcodeHeaders in **DTXcodeUtils.h**
+2, *Import DTXcodeHeaders in* ***DTXcodeUtils.h***
 
 `#import “DTXcodeHeaders.h"`
 
-3, Since we know IDESourceCodeDocument has a method called `-ideTopLevelStructureObjects` let’s make it known to the compiler. Add the method into the @interface declaration of IDESourceCodeDocument in **DTXcodeHeaders.h** so it looks like the following:
+3, *Since we know IDESourceCodeDocument has a method called `-ideTopLevelStructureObjects` let’s make it known to the compiler. Add the method into the @interface declaration of IDESourceCodeDocument in* ***DTXcodeHeaders.h*** *so it looks like the following:*
 
 ```
 @interface IDESourceCodeDocument : IDEEditorDocument
@@ -367,11 +367,11 @@ DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like someth
 @end
 ```
 
-4, Import DTXCodeUtils in **“AwesomePlugin.m”**
+4, *Import DTXCodeUtils in* ***“AwesomePlugin.m”***
 
 `#import “DTXcodeUtils.h"`
 
-5, Change the `-updatePanel` implementation to the following:
+5, *Change the `-updatePanel` implementation to the following:*
 
 ```
 - (void)updatePanel {
@@ -380,11 +380,175 @@ DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like someth
 }
 ```
 
-6, Insert a breakpoint after the `id landmarkItems =…;` line.
+6, *Insert a breakpoint after the `id landmarkItems =…;` line.*
 
-7, **Build and run!**
+7, ***Build and run!***
 
 - - -
 
 <p align="center"><img src="images/xcp-tut-landmarkitems.png" border="1"/></p>
+
+Alright, apparently -ideTopLevelStructureObjects returns an NSArray* containing **DVTSourceLandmarkItems**.
+
+And surprise, surprise right clicking on the **landmarkitems** array and selecting **“Print Description of “landmarkitems”** prints some very interesting things! We can see all the interface and implementation elements along with what seems to be their position in the document. This is very promising! Indeed if we have `#pragma`s in our code, it prints those too!
+
+Seems like all we have to do is retrieve the landmark items and display them! Seems easy enough.
+
+1, *Drag ’n’ Drop DVTSourceLandmarkItem.h from the runtime headers into the project navigator. Make sure you delete the unnecessary protocol conformances and the .cxx method.
+
+2, *Import DVTSourceLandmarkItem into* ***AwesomePlugin.m***
+
+`#import "DVTSourceLandmarkItem.h"`
+
+3, *Declare a global variable of type NSMutableArray * in* ***AwesomePlugin.m*** *called currentItems*
+
+`@property NSMutableArray *currentItems;`
+
+4, *Change the `-updatePanel` implementation to the following:*
+
+```
+- (void)updatePanel {
+    
+    IDESourceCodeDocument *document = [DTXcodeUtils currentSourceCodeDocument];
+    NSArray *landmarkItems = [document ideTopLevelStructureObjects];
+    
+    // Let’s flatten the array, so it’s easier to work with
+    self.currentItems = [NSMutableArray array];
+    for (DVTSourceLandmarkItem *item in landmarkItems) {
+        NSMutableArray *items = [self childrenFromLandmarkItem:item];
+        [self.currentItems addObjectsFromArray:items];
+    }
+    
+    // Display the items
+    [self populatePanel];
+}
+```
+
+5, *Implement `-childrenFromLandmarkItem`*
+
+```
+- (NSMutableArray *)childrenFromLandmarkItem:(DVTSourceLandmarkItem *)landmarkItem {
+    
+    NSMutableArray *returnArray = [NSMutableArray array];
+    [returnArray addObject:landmarkItem];
+    for (DVTSourceLandmarkItem *child in landmarkItem.children) {
+        [returnArray addObjectsFromArray:[self childrenFromLandmarkItem:child]];
+    }
+    
+    return returnArray;
+}
+```
+
+There. One more thing left to do which is to implement `-populatePanel`. But before we can do that, we need to implement an NSTextField subclass to capture mouse clicks.
+
+This is because later on we would like to have the feature of jumping to the source code position of the method signiter being clicked.
+
+6, *Create new file, name it APTextField and make it a subclass of NSTextField. Then replace the contents of `APTextField.h` with the following...*
+
+```
+#import <Cocoa/Cocoa.h>
+
+@protocol APTextFieldClickDelegate <NSObject>
+- (void)itemViewWithTagDidReceiveClick:(NSInteger)tag;
+@end
+
+@interface APTextField : NSTextField
+@property (weak) id <APTextFieldClickDelegate> clickDelegate;
+@end
+```
+
+...while `APTextField.m` should look like this:
+
+```
+#import "APTextField.h"
+@interface APTextField ()
+@property NSTrackingArea *areaTracker;
+@end
+
+@implementation APTextField
+
+- (instancetype)initWithFrame:(NSRect)frameRect {
+    self = [super initWithFrame:frameRect];
+    
+    return self;
+}
+
+
+- (void)mouseUp:(NSEvent *)theEvent {
+    [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
+        context.duration = 0.05;
+        self.animator.alphaValue = 0;
+    } completionHandler:^{
+        [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
+            context.duration = 0.05;
+            self.animator.alphaValue = 1;
+        } completionHandler:nil];
+    }];
+        if ([self.clickDelegate respondsToSelector:@selector(itemViewWithTagDidReceiveClick:)]) {
+        	[self.clickDelegate itemViewWithTagDidReceiveClick:self.tag];
+    }
+}
+
+
+-(void)updateTrackingAreas {
+    if (self.areaTracker != nil) {
+        [self removeTrackingArea:self.areaTracker];
+    }
+    
+    int opts = (NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways);
+    self.areaTracker = [ [NSTrackingArea alloc] initWithRect:[self bounds]
+                                                     options:opts
+                                                       owner:self
+                                                    userInfo:nil];
+    [self addTrackingArea:self.areaTracker];
+}
+```
+
+Nothing really fancy here, just making sure that when we click the textfield the clickDelegate is informed along with its tag.
+
+7, *Now we can move on and implement `-populatePanel:`*
+
+```
+- (void)populatePanel {
+    
+    // Remove the previous views
+    [sharedPlugin.containerView setSubviews:[NSArray array]];
+    
+    
+    // Calculate and set the height of the container view
+    float itemHeight = 20;
+    float correctHeight = self.currentItems.count*itemHeight+itemHeight*1.5;
+    [sharedPlugin.containerView setFrame:CGRectMake(sharedPlugin.containerView.frame.origin.x, sharedPlugin.containerView.frame.origin.y, sharedPlugin.containerView.frame.size.width, correctHeight)];
+    
+    
+    // Add the current items
+    for (int i = 0; i < self.currentItems.count; i++) {
+        
+        DVTSourceLandmarkItem *item = self.currentItems[i];
+        if (!item.name || [item.name isKindOfClass:[NSNull class]]) {
+            continue;
+        }
+        
+        float itemY = sharedPlugin.containerView.frame.size.height-itemHeight*1.5-(i*itemHeight);
+        APTextField *textField = [[APTextField alloc] initWithFrame:CGRectMake(20, itemY, sharedPlugin.containerView.frame.size.width, itemHeight)];
+        textField.selectable = NO;
+        textField.editable = NO;
+        textField.bezeled = NO;
+        textField.drawsBackground = NO;
+        textField.font = [NSFont systemFontOfSize:13];
+        [textField setLineBreakMode:NSLineBreakByTruncatingTail];
+        textField.stringValue = item.name;
+        [textField setTag:i];
+        textField.clickDelegate = self;
+        [sharedPlugin.containerView addSubview:textField];
+    }
+}
+```
+
+**And we are done!**
+
+I’ll let this music illustrate the epicness of what we have accomplished so far:
+https://www.youtube.com/watch?v=VAZsf8mTfyk
+
+### 3.3 Jumping around
 
