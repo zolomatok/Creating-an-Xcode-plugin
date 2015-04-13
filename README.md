@@ -251,7 +251,7 @@ After importing the headers, there are a couple of things we need to do:
 2. The headers do not contain the necessary #imports, we have to do the imports manually.
   2. Import the **superclass** if it's not a Foundation or AppKit class
   2. Other unknown classes need not necessarily be imported. We can substitute the imports with simple `@class` declarations. 
-3. The class might have **protocol conformities** declared. **Comment them out, or delete them.**
+3. The class might have **protocol conformances** declared. **Comment them out, or delete them.**
 
 <p align="center"><img src="images/xcp-tut-importing.png" border="1"/></p>
 
@@ -343,4 +343,48 @@ Remember, we are inside the **JGMethodReplacement** function, so `self` would ac
 
 ### 3.2 The Editor 
 Now that we know how to **display** our own content within Xcode, it’s time to actually retrieve the information we need. That means interpreting the code!
+
+Fortunately we do not have to parse C, Obj-C or Swift code ourselves. Xcode parses it as you type, so by the time we need to look at the code it is conveniently parsed and objectified! This happens on multiple levels. If you need to access the symbol tree take a look at at the [CodePilot](https://github.com/macoscope/CodePilot) plugin’s code, since its creators, the wonderful people that they are open-sourced it. If you are interested in a history lesson you should definitely read The [Story of Code Pilot](http://macoscope.com/blog/the-story-of-code-pilot/)!
+
+However we will deal an abstraction layer that has more to do with the way the editor displays the code, than the code itself. The **Document Landmark Items**. This is where **DTXcodeUtils** comes into play. It is a collection of known DVTKit and IDEKit classes that has something to do with the code editor. 
+Note, that DTXCodeUtils does not actually contain the header of these classes, it just declares them along with a few helpful methods and properties they have. If we want the full picture on what these classes do, we have to find them among the runtime headers and look at them wholly.
+
+DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like something we night meed. And sure enought, upon closer inspection we find that it has a method called `-ideTopLevelStructureObjects` which returns someting. Let’s find out what it is!
+
+1, Import AppKit into into **DTXcodeHeaders.h** to silence the compiler errors
+
+`#import <Appkit/AppKit.h>`
+
+2, Import DTXcodeHeaders in **DTXcodeUtils.h**
+
+`#import “DTXcodeHeaders.h"`
+
+3, Since we know IDESourceCodeDocument has a method called `-ideTopLevelStructureObjects` let’s make it known to the compiler. Add the method into the @interface declaration of IDESourceCodeDocument in **DTXcodeHeaders.h** so it looks like the following:
+
+```
+@interface IDESourceCodeDocument : IDEEditorDocument
+- (NSArray *)ideTopLevelStructureObjects;
+@end
+```
+
+4, Import DTXCodeUtils in **“AwesomePlugin.m”**
+
+`#import “DTXcodeUtils.h"`
+
+5, Change the `-updatePanel` implementation to the following:
+
+```
+- (void)updatePanel {
+    IDESourceCodeDocument *document = [DTXcodeUtils currentSourceCodeDocument];
+    id landmarkItems = [document ideTopLevelStructureObjects];
+}
+```
+
+6, Insert a breakpoint after the `id landmarkItems =…;` line.
+
+7, **Build and run!**
+
+- - -
+
+<p align="center"><img src="images/xcp-tut-landmarkitems.png" border="1"/></p>
 
