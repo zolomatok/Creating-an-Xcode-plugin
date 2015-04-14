@@ -148,11 +148,11 @@ As Mattt Thompson from NSHipster puts it, [“Method swizzling is the process of
 
 It’s like overriding a method via subclassing, only this way the class that is doing the overriding does not have to be a subclass! It’s a language feature of Objective-C. Crazy!
 
-1, Import **JGMethodSwizzler** in AwesomePlugin.m
+1, *Import ***JGMethodSwizzler*** *in AwesomePlugin.m*
 
 `#import “JGMethodSwizzler.h"`
 
-2, Next replace **-initWithBundle:’s** implementation to the following:
+2, *Next replace* ***-initWithBundle:’s*** *implementation to the following*:
 
 ```
 - (id)initWithBundle:(NSBundle *)plugin {
@@ -167,7 +167,7 @@ It’s like overriding a method via subclassing, only this way the class that is
 }
 ```
 
-3, Implement **-createDocPanel**
+3, *Implement* ***-createDocPanel***
 
 ```
 - (void)createDocPanel {
@@ -228,7 +228,7 @@ Xcode will complain about `_contentViewForSlice:inCategory:` being an `undeclare
 
 Alright seems like slice is of type `IDEUtilitySliceExtension*`, while category is of type `DVTExtension*`, and apparently the method’s return type is `DVTControllerContentView*`.
 
-Looking at their header files it seems both sport the ‘name’ property, which might reveal more about them.
+Looking at their header files it seems both sport the `name` property, which might reveal more about them.
 
 *Insert the following line just before ‘// D’:*
 
@@ -241,17 +241,17 @@ Now we are getting somewhere! Seems like the name of the slice really tells us w
 Switching between the inspector tabs, there is a slice named **“QuickHelpInspectorMain”**. Ideally, with more time, we could find the method that inserts these slices and create our own tab in the inspector tab switcher, but since the Quick Help inspector is rarely used, we can hijack it to display our views.
 
 - - -
-First we need to import `DVTControllerContentView.h` into our project. It is a subclass of `DVTLayoutView_ML` so we need to import him too. DVTLayoutView_ML is just an NSView subclass, so the chain of imports stops here, but it is not uncommon having to import numberous files so that you can use one class.
+First we need to import `DVTControllerContentView.h` into our project. It is a subclass of `DVTLayoutView_ML` so we need to import him too. DVTLayoutView_ML is just an NSView subclass, so the chain of imports stops here, but it is not uncommon having to import numerous files so that you can use one class.
 
 *Let’s create a New Group titled XcodeHeaders for our imported headers in the Project Navigator and drag ’n’ drop* ***DVTControllerContentView.h*** *and* ***DVTLayoutView_ML.h*** *into it. Check “Copy items if needed”.*
 
 After importing the headers, there are a couple of things we need to do:
 
-1. The class-dumping process inserts a `- (void).cxx_destruct;` method declaration into each files. Since these are not valid Obj-c method names, Xcode will complain. **Just comment it out or delete it**.
-2. The headers do not contain the necessary #imports, we have to do the imports manually.
+1. The class-dumping process inserts a `- (void).cxx_destruct;` method declaration into each file. Since these are not valid Obj-c method names, Xcode will complain. **Just comment it out or delete it**.
+2. The headers do not contain the necessary `#imports`, we have to do them manually
   2. Import the **superclass** if it's not a Foundation or AppKit class
   2. Other unknown classes need not necessarily be imported. We can substitute the imports with simple `@class` declarations. 
-3. The class might have **protocol conformances** declared. **Comment them out, or delete them.**
+3. The class might have **protocol conformances** declared. Comment them out, or delete them.
 
 <p align="center"><img src="images/xcp-tut-importing.png" border="1"/></p>
 
@@ -263,7 +263,7 @@ After importing the headers, there are a couple of things we need to do:
 #import "DVTControllerContentView.h"
 ```
 
-*Then let’s declare a* ***global property*** *of type `NSView*` in `AwesomePlugin.m`, called **“containerView”**. So our `@interface` looks like this:*
+*Then let’s declare a* ***global property*** *of type `NSView`* in `AwesomePlugin.m`, called **“containerView”**. So our `@interface` looks like this:*
 
 ```
 @interface AwesomePlugin()
