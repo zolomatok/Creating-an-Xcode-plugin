@@ -365,15 +365,7 @@ Note, that DTXCodeUtils does not actually contain the header of these cslasses, 
 
 DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like something we night meed. And sure enought, upon closer inspection we find that it has a method called `-ideTopLevelStructureObjects` which returns someting. Let’s find out what it is!
 
-1, *Import AppKit into into* ***DTXcodeHeaders.h*** *to silence the compiler errors*
-
-`#import <Appkit/AppKit.h>`
-
-2, *Import DTXcodeHeaders in* ***DTXcodeUtils.h***
-
-`#import “DTXcodeHeaders.h"`
-
-3, *Since we know IDESourceCodeDocument has a method called `-ideTopLevelStructureObjects` let’s make it known to the compiler. Add the method into the @interface declaration of IDESourceCodeDocument in* ***DTXcodeHeaders.h*** *so it looks like the following:*
+1, *Since we know IDESourceCodeDocument has a method called `-ideTopLevelStructureObjects` let’s make it known to the compiler. Add the method into the @interface declaration of IDESourceCodeDocument in* ***DTXcodeHeaders.h*** *so it looks like the following:*
 
 ```
 @interface IDESourceCodeDocument : IDEEditorDocument
@@ -381,11 +373,11 @@ DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like someth
 @end
 ```
 
-4, *Import DTXCodeUtils in* ***“AwesomePlugin.m”***
+2, *Import DTXCodeUtils in* ***“AwesomePlugin.m”***
 
 `#import "DTXcodeUtils.h"`
 
-5, *Change the `-updatePanel` implementation to the following:*
+3, *Change the `-updatePanel` implementation to the following:*
 
 ```
 - (void)updatePanel {
@@ -394,9 +386,9 @@ DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like someth
 }
 ```
 
-6, *Insert a breakpoint after the `id landmarkItems =…;` line.*
+4, *Insert a breakpoint after the `id landmarkItems =…;` line.*
 
-7, ***Build and run!***
+5, ***Build and run!***
 
 - - -
 
