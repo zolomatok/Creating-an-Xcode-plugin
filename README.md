@@ -70,7 +70,7 @@ Let us take note of what we see in **AwesomePlugin.m** right off the bat:
 
 That’s right, a new Xcode instance was opened since Xcode can debug itself! We can use all the standard debugging tools too, including breakpoints!
 
-*Now click the* ***Edit menu***, *then the ***Do Action*** *menu item, in the* ***newly opened Xcode instance***. Hello World!
+*Now click the* ***Edit menu***, *then the* ***Do Action*** *menu item, in the* ***newly opened Xcode instance***. Hello World!
 
 You will find that the Do Action menu item is only available in the second Xcode. That’s because plugin loading happens when Xcode is launched. 
 
@@ -702,6 +702,8 @@ When you are done with your plugin it's best to include it in Alcatraz! Fork the
 **Don't forget: Every time a new Xcode comes out (even if it's from say Xcode 6.2 to 6.3) its UUID will change. Make sure you update your plugin with the new UUID, else your plugin will stop working for everyone.**
 
 ## Where to go from here?
+
+You can take a look at the source code of [ZMDocItemInspector](https://github.com/zolomatok/ZMDocItemInspector) which is a beefed up version of AwesomePlugin. 
 
 When you start using your shiny new plugin and start to notice that Xcode crashes more often than it usually does, open the Console.app in your Applications / Utilities folder. The log there contains a line about Xcode having crashed and there is a button which will let you see the crash report.
 
