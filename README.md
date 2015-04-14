@@ -85,17 +85,24 @@ The way to solve this is by uninstalling the plugin by **deleting it from the pl
 - - -
 *Let’s setup our project.*
 
-1. You can delete the **-doMenuAction** method, and the **“// Sample Menu Item:”** section of **-initWithBundle:**
-2. Add **JGMethodSwizzler.h** and **JGMethodSwizzler.m** into your project by dragging them into the Project Navigator.
-3. Add **DTXcodeHeaders.h**, **DTXcodeUtils.h** and **DTXcodeUtils.m** into the project also.
+1, You can delete the **-doMenuAction** method, and the **“// Sample Menu Item:”** section of **-initWithBundle:**
+2, Add **JGMethodSwizzler.h** and **JGMethodSwizzler.m** into your project by dragging them into the Project Navigator.
+3, Add **DTXcodeHeaders.h**, **DTXcodeUtils.h** and **DTXcodeUtils.m** into the project also.
+4, In **DTXcodeHeaders.h** import `AppKit` 
 
-Additionally, if you are following this tutorial from the future (OMG HAX!) using **Xcode 7** or later, you might need to add your Xcode version’s UUID into the **DVTPluginCompatibilityUUIDS** field in the Info.plist.
+`#import <AppKit/AppKit.h>`
+
+5, In **DTXcodeUtils.h** import `DTXcodeHeaders.h`
+
+`#import "DTXcodeHeaders.h"`
+
+One more **very important** part of the setup is to include the current Xcode version's UUID in the project's plist. Any plugin will only be loaded if it contains the UUID of the Xcode loading it.
 
 To read the UUID of your Xcode, paste the following snippet into **Terminal**:
 
 `defaults read /Applications/Xcode.app/Contents/Info DVTPlugInCompatibilityUUID`
 
-This will spit out the unique ID you need to copy into the Info.plist under DVTPluginCompatibilityUUIDS. This is to tell Xcode that your plugin is compatible with the current version.
+This will spit out the unique ID you need to copy into the **Info.plist** under **DVTPluginCompatibilityUUIDS**. 
 
 <p align="center"><img src="images/xcp-tut-files.png" border="1"/></p>
 
@@ -243,7 +250,7 @@ Switching between the inspector tabs, there is a slice named **“QuickHelpInspe
 - - -
 First we need to import `DVTControllerContentView.h` into our project. It is a subclass of `DVTLayoutView_ML` so we need to import him too. DVTLayoutView_ML is just an NSView subclass, so the chain of imports stops here, but it is not uncommon having to import numerous files so that you can use one class.
 
-*Let’s create a New Group titled XcodeHeaders for our imported headers in the Project Navigator and drag ’n’ drop* ***DVTControllerContentView.h*** *and* ***DVTLayoutView_ML.h*** *into it. Check “Copy items if needed”.*
+*Let’s create a New Group titled XcodeHeaders for our imported headers in the Project Navigator and drag ’n’ drop* ***DVTControllerContentView.h*** *and* ***DVTLayoutView_ML.h*** *into it. Check “Copy items if needed”. To find them, open the runtime headers folder in Finder and search for their names.*
 
 After importing the headers, there are a couple of things we need to do:
 
@@ -371,7 +378,7 @@ DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like someth
 
 4, *Import DTXCodeUtils in* ***“AwesomePlugin.m”***
 
-`#import “DTXcodeUtils.h"`
+`#import "DTXcodeUtils.h"`
 
 5, *Change the `-updatePanel` implementation to the following:*
 
@@ -396,7 +403,7 @@ And surprise, surprise right clicking on the **landmarkitems** array and selecti
 
 Seems like all we have to do is retrieve the landmark items and display them! Seems easy enough.
 
-1, *Drag ’n’ Drop DVTSourceLandmarkItem.h from the runtime headers into the project navigator. Make sure you delete the unnecessary protocol conformances and the .cxx method.
+1, *Drag ’n’ Drop DVTSourceLandmarkItem.h from the runtime headers into the project navigator. Make sure you delete the unnecessary protocol conformances and the .cxx method.*
 
 2, *Import DVTSourceLandmarkItem into* ***AwesomePlugin.m***
 
@@ -504,11 +511,16 @@ This is because later on we would like to have the feature of jumping to the sou
                                                     userInfo:nil];
     [self addTrackingArea:self.areaTracker];
 }
+@end
 ```
 
 Nothing really fancy here, just making sure that when we click the textfield the clickDelegate is informed along with its tag.
 
-7, *Now we can move on and implement `-populatePanel:`*
+7, *Import `APTextField.h` in* ***AwesomePlugin.m***
+
+`#import "APTextField.h"`
+
+8, *Now we can move on and implement `-populatePanel:`*
 
 ```
 - (void)populatePanel {
@@ -569,6 +581,10 @@ Sure enough, seems like there is **IDESourceCodeEditor** which quite possibly re
 - (void)selectDocumentLocations:(id)locations highlightSelection:(BOOL)highlightSelection;
 @end
 ```
+
+*Make `AwesomePlugin` conform to `APTextFieldClickDelegate`*
+
+`@interface AwesomePlugin() <APTextFieldClickDelegate>`
 
 *Implement the `-itemViewWithTagDidReceiveClick:` delegate method we created previously in* ***AwesomePlugin.m***
 
@@ -648,7 +664,7 @@ Time to break out Xcode Explorer again. It has a nice **Notifications view** whi
 1. *Goto* ***Window*** *menu* ***Explorer \ Notifications***
 2. *Press the big circular record button in the Notifications window.*
 3. *Press Command-S.*
-4. **Rejoice!** IDEEditorDocumentDidSaveNotification!
+4. **Rejoice!** IDEEditorDocumentDidSaveNotification and IDESourceCodeEditorDidFinishSetup!
 
 Hurry, before it escapes!
 
@@ -664,17 +680,23 @@ Hurry, before it escapes!
 ```
 - (void)notificationListener:(NSNotification *)notif {
     
-    // Save
-    if ([notif.name isEqualToString:@"IDEEditorDocumentDidSaveNotification"]) {
+    // Save or File changed
+    if ([notif.name isEqualToString:@"IDEEditorDocumentDidSaveNotification"] || [notif.name isEqualToString:@"IDESourceCodeEditorDidFinishSetup"]) {
        [sharedPlugin updatePanel];
     }
 }
 ```
 
 
-***Build and run!*** Create a new method, hit save and whatch the panel repopulate!
+***Build and run!*** Create a new method, hit save and whatch the panel repopulate! It also works when switching between files!
 
 <p align="center"><img src="images/xcp-tut-wasitsohard.png" border="1"/></p>
+
+## Distribution
+
+When you are done with your plugin it's best to include it in Alcatraz! Fork the [Alcatraz package repository](https://github.com/supermarin/alcatraz-packages) and include your github link.
+
+**Don't forget: Every time a new Xcode comes out (even if it's from say Xcode 6.2 to 6.3) its UUID will change. Make sure you update your plugin with the new UUID, else your plugin will stop working for everyone.**
 
 ## Where to go from here?
 
