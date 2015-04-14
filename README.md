@@ -344,9 +344,11 @@ Remember, we are inside the **JGMethodReplacement** function, so `self` would ac
 ### 3.2 The Editor 
 Now that we know how to **display** our own content within Xcode, it’s time to actually retrieve the information we need. That means interpreting the code!
 
-Fortunately we do not have to parse C, Obj-C or Swift code ourselves. Xcode parses it as you type, so by the time we need to look at the code it is conveniently parsed and objectified! This happens on multiple levels. If you need to access the symbol tree take a look at at the [CodePilot](https://github.com/macoscope/CodePilot) plugin’s code, since its creators, the wonderful people that they are open-sourced it. If you are interested in a history lesson you should definitely read [The Story of Code Pilot](http://macoscope.com/blog/the-story-of-code-pilot/)!
+Fortunately we do not have to parse C, Obj-C or Swift code ourselves. Xcode parses it as you type, so by the time we need to look at the code it is conveniently parsed and objectified! 
 
-However we will deal an abstraction layer that has more to do with the way the editor displays the code, than the code itself. The **Document Landmark Items**. This is where **DTXcodeUtils** comes into play. It is a collection of known DVTKit and IDEKit classes that has something to do with the code editor. 
+This happens on multiple levels. If you need to access the **symbol** tree take a look at at the [CodePilot](https://github.com/macoscope/CodePilot) plugin’s code, since its creators, the wonderful people that they are open-sourced it. If you are interested in a history lesson you should definitely read [The Story of Code Pilot](http://macoscope.com/blog/the-story-of-code-pilot/)!
+
+However, we will deal with an abstraction layer that has more to do with the way the editor displays the code, than the code itself. The **Document Landmark Items**. This is where **DTXcodeUtils** comes into play. It is a collection of known DVTKit and IDEKit classes that has something to do with the code editor. 
 Note, that DTXCodeUtils does not actually contain the header of these cslasses, it just declares them along with a few helpful methods and properties they have. If we want the full picture on what these classes do, we have to find them among the runtime headers and look at them wholly.
 
 DTXcodeUtils surfaces a class called DVTSourceCodeEditor which seems like something we night meed. And sure enought, upon closer inspection we find that it has a method called `-ideTopLevelStructureObjects` which returns someting. Let’s find out what it is!
