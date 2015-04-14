@@ -1,4 +1,6 @@
 # Creating an Xcode plugin
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/zolomatok/Creating-an-Xcode-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 Xcode is awesome. No doubt.  Sure, it crashes at times, frustrates us with code signing and there are certainly missing features and minor tweeks that would make it even greater.
 
 There is a nice list of available plugins over at [NSHipster](http://nshipster.com/xcode-plugins/) that aim to help with a lot of theese.
@@ -726,4 +728,6 @@ http://www.fantageek.com/1297/how-to-create-xcode-plugin/
 and the CodePilot source: https://github.com/macoscope/CodePilot
 
 Thank you all.
+
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/zolomatok/Creating-an-Xcode-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
