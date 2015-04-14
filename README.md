@@ -86,8 +86,11 @@ The way to solve this is by uninstalling the plugin by **deleting it from the pl
 *Let’s setup our project.*
 
 1, You can delete the **-doMenuAction** method, and the **“// Sample Menu Item:”** section of **-initWithBundle:**
+
 2, Add **JGMethodSwizzler.h** and **JGMethodSwizzler.m** into your project by dragging them into the Project Navigator.
+
 3, Add **DTXcodeHeaders.h**, **DTXcodeUtils.h** and **DTXcodeUtils.m** into the project also.
+
 4, In **DTXcodeHeaders.h** import `AppKit` 
 
 `#import <AppKit/AppKit.h>`
@@ -96,6 +99,8 @@ The way to solve this is by uninstalling the plugin by **deleting it from the pl
 
 `#import "DTXcodeHeaders.h"`
 
+<p align="center"><img src="images/xcp-tut-files.png" border="1"/></p>
+
 One more **very important** part of the setup is to include the current Xcode version's UUID in the project's plist. Any plugin will only be loaded if it contains the UUID of the Xcode loading it.
 
 To read the UUID of your Xcode, paste the following snippet into **Terminal**:
@@ -103,8 +108,6 @@ To read the UUID of your Xcode, paste the following snippet into **Terminal**:
 `defaults read /Applications/Xcode.app/Contents/Info DVTPlugInCompatibilityUUID`
 
 This will spit out the unique ID you need to copy into the **Info.plist** under **DVTPluginCompatibilityUUIDS**. 
-
-<p align="center"><img src="images/xcp-tut-files.png" border="1"/></p>
 
 ## X: Intermission
 Let’s break down what is needed for us to accomplish our task. We would like to find a way to somehow…
