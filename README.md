@@ -18,7 +18,7 @@ Creating an Xcore plugin feels like an adventure on an uncharted treasure island
 This tutorial will teach you how to **get started**, what **tools** to use and what **workflow** to follow when developing an Xcode plugin. 
 We will create a plugin that lists the document items (interfaces, properties, methods, etc..) in the right side panel. Clicking an item will select it in the source code window and scroll to its position. It’s basically a watered down version of [ZMDocItemInspector](https://github.com/zolomatok/ZMDocItemInspector).
 
-**Note:** This tutorial shamelessly rips off the style of those found on [raywenderlich.com](http://www.raywenderlich.com/), since they work so well. That means face memes, everybody. [**Edit** ***(Feburary 21, 2018)***: At the time of writing the tuotiral, raywenderlich.com used face memes. Sadly, they don't use them anymore.]
+**Note:** This tutorial shamelessly rips off the style of those found on [raywenderlich.com](http://www.raywenderlich.com/), since they work so well. That means face memes, everybody. [**Edit - Feburary 21, 2018**: At the time of writing the tuotiral, raywenderlich.com used face memes. Sadly, they don't use them anymore.]
 
 ## Workflow
 The hardest part of the process is to find out where to begin. How do we even start developing a plugin? Lack of documentation aside, Xcode actually provides great support for plugins and internally it makes use of this feature heavily.
