@@ -1,7 +1,7 @@
 # Creating an Xcode plugin
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/zolomatok/Creating-an-Xcode-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-**NOTE: This guide is for Xcode 6, which is a very old version and the stuff described here may not work anymore. Also, this guide is not about the officially supported [Source Editor Extensions](https://developer.apple.com/documentation/xcodekit/creating_a_source_editor_extension).**
+**NOTE: This guide is for Xcode 6, which is a very old version and the stuff described here probably doesn't work anymore. Also, this guide is not about the officially supported [Source Editor Extensions](https://developer.apple.com/documentation/xcodekit/creating_a_source_editor_extension).**
 
 
 Xcode is awesome. No doubt.  Sure, it crashes at times, frustrates us with code signing and there are certainly missing features and minor tweeks that would make it even greater.
